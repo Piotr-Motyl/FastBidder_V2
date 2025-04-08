@@ -1,0 +1,55 @@
+# 🟢 Pliki systemowe
+.DS_Store
+Thumbs.db
+
+# 🟢 Pliki wirtualnego środowiska (venv, poetry, pipenv)
+venv/
+env/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# 🟢 Pliki Pythona
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.swp
+*.swo
+*.bak
+
+# 🟢 Pliki związane z edytorami i IDE
+.vscode/
+.idea/
+*.iml
+
+# 🟢 Pliki Django (baza danych, migracje, statyczne pliki)
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+static/
+*.log
+
+# 🟢 Migracje Django (opcjonalnie, jeśli generujesz ręcznie)
+**/migrations/**
+
+# 🟢 Pliki środowiskowe (hasła, klucze API)
+.env
+*.secrets
+settings_local.py
+.venv
+
+# 🟢 Pliki testowe i raporty
+.coverage
+*.cover
+htmlcov/
+reports/
+
+# 🟢 Pliki Dockerowe (jeśli używasz)
+docker-compose.override.yml
+
+# 🟢 Pliki dla CI/CD
+*.pem
+*.crt
+*.key
