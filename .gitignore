@@ -45,6 +45,8 @@ settings_local.py
 *.cover
 htmlcov/
 reports/
+debug_imports.py
+test_magic.py
 
 # 🟢 Pliki Dockerowe (jeśli używasz)
 docker-compose.override.yml
