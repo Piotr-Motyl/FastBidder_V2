@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, List
 import numpy as np
 import pickle
@@ -18,6 +19,9 @@ class EmbeddingError(Exception):
 
 
 class MatchingEngineService:
+    def __init__(self):
+        self.Logger = logging.getLogger(__name__)
+
     def match_descriptions(
         self, session_id: str, matching_threshold: float
     ) -> List[Dict[str, Any]]:
@@ -73,7 +77,7 @@ class MatchingEngineService:
             )
 
         # Konwersja progu podobieństwa z zakresu 0-100 do 0-1
-        normalized_threshold = matching_threshold / 100.0
+        threshold = matching_threshold
 
         # Pobranie opisów z bazy danych
         try:
@@ -108,7 +112,13 @@ class MatchingEngineService:
 
             # Przygotowanie wyników dopasowania
             matching_results = self._calculate_embeddings_similarity(
-                wf_descriptions, ref_descriptions, normalized_threshold
+                wf_descriptions, ref_descriptions, threshold
+            )
+
+            # Logowanie wyników dopasowania
+            matched_count = sum(1 for result in matching_results if result["matched"])
+            self.logger.info(
+                f"Znaleziono dopasowania dla {matched_count} z {len(matching_results)} opisów"
             )
 
             return matching_results
@@ -129,7 +139,7 @@ class MatchingEngineService:
         Args:
             wf_descriptions: QuerySet z opisami WF
             ref_descriptions: QuerySet z opisami REF
-            threshold: Próg podobieństwa (0-1)
+            threshold: Próg podobieństwa (0-100)
 
         Returns:
             Lista wyników dopasowania
@@ -170,7 +180,10 @@ class MatchingEngineService:
 
         # Obliczenie podobieństwa kosinusowego między wszystkimi parami embeddingów
         # Wynik to macierz podobieństwa [liczba_wf x liczba_ref]
-        similarity_matrix = np.round(np.dot(wf_emb_norm, ref_emb_norm.T) * 100, 2)
+        # Wartości podobieństwa są w zakresie 0-1, więc mnożymy przez 100 dla uzyskania zakresu 0-100
+        similarity_matrix = np.dot(wf_emb_norm, ref_emb_norm.T) * 100
+        # Zaokrąglenie do 2 miejsc po przecinku dla czytelności
+        similarity_matrix = np.round(similarity_matrix, 2)
 
         # Przygotowanie listy wyników
         matching_results = []
@@ -193,7 +206,7 @@ class MatchingEngineService:
             }
 
             # Sprawdzenie czy istnieją dopasowania powyżej progu
-            matches_indices = np.where(similarities >= threshold * 100)[0]
+            matches_indices = np.where(similarities >= threshold)[0]
 
             if len(matches_indices) > 0:
                 # Znaleziono co najmniej jedno dopasowanie
@@ -206,8 +219,34 @@ class MatchingEngineService:
                 # Sprawdź czy istnieje więcej dopasowań z taką samą wartością podobieństwa
                 best_matches = np.where(similarities == best_similarity)[0]
 
-                # Przypisanie wyniku dopasowania
-                ref_idx = best_match_idx  # Wybieramy pierwsze najlepsze dopasowanie
+                # FIX: Priorytetyzuj dokładne dopasowania (100% podobieństwa) lub dokładne dopasowanie tekstu
+                exact_text_match = None
+                for idx in best_matches:
+                    if (
+                        similarities[idx] == 100.0
+                        or wf["wf_description"].strip()
+                        == ref_data[idx]["ref_description"].strip()
+                    ):
+                        exact_text_match = idx
+                        break
+
+                # Jeśli znaleziono dokładne dopasowanie tekstu, użyj go zamiast pierwszego najlepszego
+                ref_idx = (
+                    exact_text_match if exact_text_match is not None else best_match_idx
+                )
+
+                # Log istotne informacje dla debugowania
+                if len(best_matches) > 1:
+                    self.logger.debug(
+                        f"Znaleziono {len(best_matches)} dopasowań z podobieństwem {best_similarity}% "
+                        f"dla opisu WF: '{wf['wf_description']}', wiersz {wf['wf_row_index']}"
+                    )
+                    for idx in best_matches:
+                        self.logger.debug(
+                            f"  Dopasowanie REF {idx}: '{ref_data[idx]['ref_description']}', "
+                            f"wiersz {ref_data[idx]['ref_row_index']}, cena: {ref_data[idx]['price']}"
+                        )
+
                 ref_match = ref_data[ref_idx]
 
                 result.update(
