@@ -1,6 +1,5 @@
 from django.db import models
 import uuid
-import os
 
 
 class UploadedFile(models.Model):
@@ -17,3 +16,6 @@ class UploadedFile(models.Model):
 
     def get_file_path(self):
         return self.file.path
+
+    def __str__(self):
+        return f"{self.file_type} - {self.original_filename} ({self.id})"

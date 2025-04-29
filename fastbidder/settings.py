@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import sys
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -16,9 +17,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
 # Application definition
-
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -27,12 +26,12 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
-    "orchestrator",
-    "file_management",
-    "excel_processing",
-    "semantic_analysis",
-    "matching_engine",
-    "processing_data",
+    "apps.orchestrator",
+    "apps.file_management",
+    "apps.excel_processing",
+    "apps.semantic_analysis",
+    "apps.matching_engine",
+    "apps.processing_data",
 ]
 
 MIDDLEWARE = [
@@ -116,6 +115,20 @@ STATIC_URL = "static/"
 # Ustawienia dla mediów
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+# Konfiguracja dla modułu file_management
+FILE_UPLOAD_MAX_SIZE_MB = 12  # Maksymalny rozmiar pliku w MB
+EXCEL_MIME_TYPES = [
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",  # xlsx
+    "application/vnd.ms-excel",  # xls
+]
+# Ścieżki dla plików
+UPLOAD_WF_DIR = os.path.join(MEDIA_ROOT, "uploads", "wf")
+UPLOAD_REF_DIR = os.path.join(MEDIA_ROOT, "uploads", "ref")
+
+# Upewniam się, że katalogi istnieją
+os.makedirs(UPLOAD_WF_DIR, exist_ok=True)
+os.makedirs(UPLOAD_REF_DIR, exist_ok=True)
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
