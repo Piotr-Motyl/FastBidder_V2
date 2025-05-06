@@ -20,7 +20,7 @@ class EmbeddingError(Exception):
 
 class MatchingEngineService:
     def __init__(self):
-        self.Logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(__name__)
 
     def match_descriptions(
         self, session_id: str, matching_threshold: float
@@ -144,6 +144,7 @@ class MatchingEngineService:
         Returns:
             Lista wyników dopasowania
         """
+
         # Deserializacja embeddingów
         wf_embeddings = []
         ref_embeddings = []

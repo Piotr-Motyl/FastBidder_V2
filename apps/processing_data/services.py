@@ -480,25 +480,13 @@ class ProcessingDataService:
             # w definicji modeli, ale możemy też jawnie usunąć dane dla większej przejrzystości
 
             # Usunięcie opisów z pliku roboczego
-            wf_descriptions_count = session.working_descriptions.count()
             session.working_descriptions.all().delete()
-            logger.info(
-                f"Usunięto {wf_descriptions_count} opisów z pliku roboczego dla sesji {session_id}"
-            )
 
             # Usunięcie opisów z pliku referencyjnego
-            ref_descriptions_count = session.reference_descriptions.count()
             session.reference_descriptions.all().delete()
-            logger.info(
-                f"Usunięto {ref_descriptions_count} opisów z pliku referencyjnego dla sesji {session_id}"
-            )
 
             # Usunięcie wyników dopasowania
-            matching_results_count = session.matching_results.count()
             session.matching_results.all().delete()
-            logger.info(
-                f"Usunięto {matching_results_count} wyników dopasowania dla sesji {session_id}"
-            )
 
             # W MVP usuwamy sesję całkowicie
             # W przyszłości można rozważyć zmianę statusu sesji na "completed" zamiast usuwania

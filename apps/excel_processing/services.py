@@ -1,6 +1,6 @@
 from venv import logger
 import pandas as pd
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 import numpy as np
 import logging
 import string
@@ -73,7 +73,7 @@ class ExcelProcessingService:
         try:
             result = {"working_file_data": [], "reference_file_data": []}
 
-            logger.info(f"Rozpoczynanie ekstrakcji danych z plików Excel")
+            logger.info("extract_data: Rozpoczynanie ekstrakcji danych z plików Excel")
 
             # Ekstrakcja danych z Working File (WF)
             working_file_data = self._extract_working_file_data(
@@ -84,7 +84,7 @@ class ExcelProcessingService:
             result["working_file_data"] = working_file_data
 
             logger.info(
-                f"Wyekstrahowano {len(working_file_data)} rekordów z pliku roboczego"
+                f"extract_data: Wyekstrahowano {len(working_file_data)} rekordów z pliku roboczego WF"
             )
 
             # Ekstrakcja danych z Reference File (REF)
@@ -97,7 +97,7 @@ class ExcelProcessingService:
             result["reference_file_data"] = reference_file_data
 
             logger.info(
-                f"Wyekstrahowano {len(reference_file_data)} rekordów z pliku referencyjnego"
+                f"extract_data: Wyekstrahowano {len(reference_file_data)} rekordów z pliku referencyjnego REF"
             )
 
             return result
@@ -125,8 +125,15 @@ class ExcelProcessingService:
         """
         try:
             # Wczytanie pliku Excel
-            logger.info(f"Wczytywanie pliku roboczego: {file_path}")
-            df = pd.read_excel(file_path)
+            logger.info(
+                f"_extract_working_file_data: Wczytywanie pliku roboczego: {file_path}"
+            )
+            df = pd.read_excel(
+                file_path
+            )  # typ DataFrame - wczytanie pliku excel, len(df) to ile rzędów danych wczytał Pandas z excela, 5 = 5 niepustcyh kolumn
+            logger.warning(
+                f"_extract_working_file_data: długość df: {len(df)} - PM: len(df)"
+            )
 
             # Konwersja litery kolumny na indeks
             col_index = self._column_letter_to_index(description_column)
@@ -141,10 +148,10 @@ class ExcelProcessingService:
                     f"Nieprawidłowy zakres wierszy: {description_range['start']}"
                 )
 
-            # Upewnienie się, że zakres nie wychodzi poza ramy pliku
+            # Upewnienie się, że zakres wierszy nie wychodzi poza ramy pliku
             if end_row > len(df):
                 logger.warning(
-                    f"Zakres wierszy przekracza rozmiar pliku. Dostosowano do rozmiaru: {len(df)}"
+                    f"_extract_working_file_data: Zakres wierszy w WF przekracza rozmiar pliku. Dostosowano do rozmiaru: {len(df)}"
                 )
                 end_row = len(df)
 
@@ -153,10 +160,13 @@ class ExcelProcessingService:
                 raise ValueError(f"Kolumna {description_column} nie istnieje w pliku")
 
             # Ekstrakcja danych
+            logger.info(
+                f"_extract_working_file_data: Rozpoczęcie Ekstrakcja danych, zakres: {str(range(start_row, end_row))}"
+            )
             result = []
             for i in range(start_row, end_row):
                 # Pobieranie wartości z komórki
-                cell_value = df.iloc[i, col_index]
+                cell_value = df.iloc[i - 1, col_index]
 
                 # Konwersja na string z obsługą wartości null
                 if pd.isna(cell_value):
@@ -173,14 +183,19 @@ class ExcelProcessingService:
                             "description": description,
                         }
                     )
+                    logger.info(
+                        f"WF: z for+in: row_index: i+1={i+1};\n"
+                        f"WF: description: {description}"
+                    )
 
-            logger.info(f"Wyekstrahowano {len(result)} opisów z pliku roboczego")
             return result
 
         except Exception as e:
-            logger.error(f"Błąd podczas ekstrakcji danych z pliku roboczego: {str(e)}")
+            logger.error(
+                f"Błąd podczas ekstrakcji danych z pliku roboczego WF: {str(e)}"
+            )
             raise ValueError(
-                f"Błąd podczas ekstrakcji danych z pliku roboczego: {str(e)}"
+                f"Błąd podczas ekstrakcji danych z pliku roboczego WF: {str(e)}"
             )
 
     def _extract_reference_file_data(
@@ -209,6 +224,9 @@ class ExcelProcessingService:
             # Wczytanie pliku Excel
             logger.info(f"Wczytywanie pliku referencyjnego: {file_path}")
             df = pd.read_excel(file_path)
+            logger.warning(
+                f"_extract_reference_file_data: długość df w REF: {len(df)} - PM: len(df)"
+            )
 
             # Konwersja liter kolumn na indeksy
             desc_col_index = self._column_letter_to_index(description_column)
@@ -221,15 +239,15 @@ class ExcelProcessingService:
             # Walidacja zakresów
             if start_row < 0:
                 raise ValueError(
-                    f"Nieprawidłowy zakres wierszy: {description_range['start']}"
+                    f"_extract_reference_file_data: Nieprawidłowy zakres wierszy: {description_range['start']}"
                 )
 
-            # Upewnienie się, że zakres nie wychodzi poza ramy pliku
-            if end_row > len(df):
+            # Upewnienie się, że zakres wierszy nie wychodzi poza ramy pliku
+            if end_row - start_row > len(df):
                 logger.warning(
-                    f"Zakres wierszy przekracza rozmiar pliku. Dostosowano do rozmiaru: {len(df)}"
+                    f"_extract_reference_file_data: Zakres wierszy w pliku REF przekracza rozmiar pliku (end_row > len(df)). Dostosowano do rozmiaru: {len(df)}"
                 )
-                end_row = len(df)
+                # end_row = len(df) # - chyba niepotrzebne
 
             # Sprawdzenie czy indeksy kolumn są poprawne
             if desc_col_index >= len(df.columns):
@@ -241,11 +259,14 @@ class ExcelProcessingService:
                 raise ValueError(f"Kolumna ceny {price_column} nie istnieje w pliku")
 
             # Ekstrakcja danych
+            logger.info(
+                f"_extract_reference_file_data: Rozpoczęcie Ekstrakcja danych, zakres: {str(range(start_row, end_row))}"
+            )
             result = []
             for i in range(start_row, end_row):
                 # Pobieranie wartości z komórek
-                desc_value = df.iloc[i, desc_col_index]
-                price_value = df.iloc[i, price_col_index]
+                desc_value = df.iloc[i - 1, desc_col_index]
+                price_value = df.iloc[i - 1, price_col_index]
 
                 # Konwersja opisu na string z obsługą wartości null
                 if pd.isna(desc_value):
@@ -270,13 +291,16 @@ class ExcelProcessingService:
                                 "price": price,
                             }
                         )
+                        logger.info(
+                            f"REF: row_index: i={i}; description: {description} - price: {price}"
+                        )
+
                 except (ValueError, TypeError):
                     logger.warning(
                         f"Nieudana konwersja ceny w wierszu {i+1}: {price_value}"
                     )
                     continue
 
-            logger.info(f"Wyekstrahowano {len(result)} opisów z pliku referencyjnego")
             return result
 
         except Exception as e:
@@ -341,11 +365,12 @@ class ExcelProcessingService:
             bool: True jeśli aktualizacja się powiodła, False w przeciwnym razie
         """
         try:
-            logger.info(f"Rozpoczęcie aktualizacji pliku roboczego: {source_file_path}")
+            logger.info(
+                f"update_working_file: Rozpoczęcie aktualizacji pliku roboczego: {source_file_path}"
+            )
 
             # Odczyt pliku Excel
             df = pd.read_excel(source_file_path)
-            logger.info(f"Plik wejściowy wczytany pomyślnie, wymiary: {df.shape}")
 
             # Konwersja liter kolumn na indeksy
             try:
@@ -377,17 +402,76 @@ class ExcelProcessingService:
                     f"Dodano brakujące kolumny do indeksu raportu: {report_col_idx}"
                 )
 
+            # Sprawdź maksymalny indeks wiersza w wynikach dopasowania
+            if matching_results:
+                max_row_idx = max(result["wf_row_index"] for result in matching_results)
+
+                # Dodaj brakujące wiersze jeśli to konieczne
+                if max_row_idx >= len(df):
+                    missing_rows = max_row_idx - len(df) + 1
+                    logger.info(
+                        f"update_working_file: Dodawanie {missing_rows} brakujących wierszy do DataFrame"
+                    )
+
+                    # Utworzenie nowych wierszy
+                    for _ in range(missing_rows):
+                        # Utwórz nowy wiersz z tą samą liczbą kolumn co DataFrame
+                        new_row = pd.Series(
+                            [np.nan] * len(df.columns), index=df.columns
+                        )
+                        # Dodaj wiersz do DataFrame
+                        df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+
+            # Upewnij się, że kolumna raportu ma typ object (string) zamiast float64
+            # To zapobiega ostrzeżeniom o niezgodności typów przy zapisie tekstu
+            # Najpierw pobieramy nazwę kolumny na podstawie indeksu
+            if report_col_idx < len(df.columns):
+                report_col_name = df.columns[report_col_idx]
+                # Konwertowanie kolumny na typ object (string)
+                df[report_col_name] = df[report_col_name].astype("object")
+
             # Aktualizacja cen i raportów dopasowania
             updated_rows = 0
-            for result in matching_results:
-                row_idx = result[
-                    "wf_row_index"
-                ]  # Już jest 0-based zgodnie z odpowiedzią
 
-                if row_idx < len(df):
+            # TODO: TYMCZASOWE ROZWIĄZANIE - KOREKCJA PRZESUNIĘCIA INDEKSÓW
+            # Problem: Istnieje niezgodność między indeksami w matching_results a faktycznymi
+            # pozycjami w DataFrame. Indeksy w matching_results są przesunięte o 1 względem
+            # faktycznych pozycji w DataFrame, co powoduje, że dane są zapisywane w niewłaściwych wierszach.
+            #
+            # Przyczyna: Prawdopodobnie algorytm generujący matching_results pomija dwa wiersze nagłówkowe,
+            # ale faktycznie zaczyna liczenie od indeksu 0 dla pierwszego wiersza danych (co odpowiada
+            # indeksowi 3 w DataFrame, ponieważ zawiera on nagłówki).
+            #
+            # Tymczasowe rozwiązanie: Odejmowanie 2 od każdego indeksu z matching_results przed użyciem go
+            # w DataFrame.
+            #
+            # Docelowe rozwiązanie:
+            # 1. Ujednolicić sposób indeksowania w całym systemie - albo wszystkie indeksy powinny
+            #    uwzględniać nagłówki, albo wszystkie powinny je pomijać
+            # 2. Zaimplementować mechanizm wykrywania struktury pliku (np. liczby wierszy nagłówkowych)
+            #    i dynamicznie dostosowywać indeksy
+            # 3. Jasno dokumentować i komunikować konwencje indeksowania używane w różnych częściach systemu
+
+            index_offset = 2  # Wartość przesunięcia do korekcji
+
+            for result in matching_results:
+                # Pobranie oryginalnego indeksu wiersza
+                original_row_idx = result["wf_row_index"]
+
+                # Zastosowanie korekcji przesunięcia
+                row_idx = original_row_idx - index_offset
+
+                logger.info(
+                    f"skorygowany/oryginalny row_idx: {row_idx}/{original_row_idx};\n"
+                    f"result: {result}"
+                )
+
+                if (
+                    row_idx < len(df) and row_idx >= 0
+                ):  # Dodatkowe zabezpieczenie przed indeksem ujemnym
                     if result["matched"]:
                         # Aktualizacja ceny
-                        df.iloc[row_idx, price_col_idx] = result["price"]
+                        df.iat[row_idx, price_col_idx] = result["price"]
 
                         # Formatowanie statusu dopasowania
                         status_text = (
@@ -401,23 +485,30 @@ class ExcelProcessingService:
                         else:
                             similarity_formatted = "N/A"
 
-                        # Aktualizacja raportu dopasowania
-                        df.iloc[row_idx, report_col_idx] = (
+                        # Aktualizacja raportu dopasowania (używamy iat zamiast iloc dla pojedynczych wartości)
+                        report_text = (
                             f"{status_text} (podobieństwo: {similarity_formatted})"
                         )
+                        # Konwertujemy wartość na string przed zapisem
+                        df.iat[row_idx, report_col_idx] = report_text
                     else:
-                        df.iloc[row_idx, report_col_idx] = "Brak dopasowania"
+                        df.iat[row_idx, report_col_idx] = "Brak dopasowania"
 
                     updated_rows += 1
                 else:
-                    logger.warning(f"Pominięto wiersz {row_idx} - poza zakresem danych")
+                    logger.warning(
+                        f"update_working_file: Pominięto wiersz {row_idx} (oryginalny {original_row_idx}) - "
+                        f"poza zakresem danych lub ujemny indeks"
+                    )
 
-            logger.info(f"Zaktualizowano {updated_rows} wierszy w pliku")
+            logger.info(
+                f"update_working_file: Zaktualizowano {updated_rows} wierszy w pliku"
+            )
 
             # Zapisanie zmodyfikowanego pliku
             df.to_excel(target_file_path, index=False)
             logger.info(
-                f"Plik wynikowy zapisany pomyślnie pod ścieżką: {target_file_path}"
+                f"update_working_file: Plik wynikowy zapisany pomyślnie pod ścieżką: {target_file_path}"
             )
 
             return True
@@ -429,5 +520,7 @@ class ExcelProcessingService:
             logger.error(f"Brak uprawnień do odczytu/zapisu pliku: {str(e)}")
             return False
         except Exception as e:
-            logger.error(f"Błąd podczas aktualizacji pliku roboczego: {str(e)}")
+            logger.error(
+                f"update_working_file: Błąd podczas aktualizacji pliku roboczego: {str(e)}"
+            )
             return False
