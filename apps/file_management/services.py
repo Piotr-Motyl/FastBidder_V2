@@ -395,6 +395,8 @@ class FileManagementService:
         )
 
     def get_result_file_path(self, working_file_path: str) -> str:
+        # TODO: zmienić, aby resultat lądował w media/results zamiast tam, skąd pochodzi plik WF.
+        # Zaharkodowane przeniesienie do media/results na końcu metody
         """
         Generuje ścieżkę do pliku wynikowego na podstawie ścieżki do pliku roboczego.
 
@@ -465,5 +467,13 @@ class FileManagementService:
 
         except IOError as e:
             raise IOError(f"Problem z dostępem do systemu plików: {str(e)}")
+
+        # TESTOWA MODYFIKACJA: Nadpisanie ścieżki pliku wynikowego na media/results
+        # Możesz zakomentować poniższe dwie linie, aby wrócić do oryginalnej funkcjonalności
+        results_dir = os.path.join("media", "results")
+        result_file_path = os.path.join(results_dir, result_file_name)
+
+        # Upewnij się, że katalog docelowy istnieje
+        os.makedirs(results_dir, exist_ok=True)
 
         return result_file_path

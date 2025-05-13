@@ -1,10 +1,21 @@
-# FastBidder
+# FastBidder 
+(The project is in an active development MVP phase and serves as an educational experiment.)
 
 FastBidder is an innovative application designed to automate the preparation of bids in the construction industry by semantically matching work descriptions. The project was created with the goal of learning Python and developing programming skills, and its primary purpose is to reduce the time required for manual comparison of descriptions in Excel files.
 
 ## Project Description
 
 In the construction industry, preparing a bid is a seemingly simple yet time-consuming task that involves manually comparing work descriptions across different Excel files. FastBidder automates this process by comparing descriptions from the offer file (Working File, WF) with catalog prices from the reference file (Reference File, REF) using semantic analysis. Based on the similarity between descriptions, the application assigns appropriate unit prices. By automating the comparison of hundreds or even thousands of cells in excel file, FastBidder significantly saves time and reduces costs in bid preparation.
+
+## Development Status and Future Plans
+
+The data flow along the happy path is correct and the program does not display any errors/bugs.
+
+However, the quality of the comparisons (matching) is unsatisfactory, and the program incorrectly matches descriptions that are not similar. FastEmbed does not distinguish key technical aspects in the descriptions.
+
+I will be testing other semantic comparison models as well as LLMs (e.g., OpenAI GPT) to evaluate the quality of the matching and the associated costs.
+
+The program is not yet robust against errors, so in the next steps I will be adding tests (starting with unit tests) and proper error and exception handling. Moreover, polish descriptions will be translated to english.
 
 ## Architecture and Modules
 
@@ -30,11 +41,8 @@ The project is built using the Django framework and consists of the following mo
 
 - **Python** and **Django** – core backend technologies.
 - **openpyxl** or **pandas** – libraries for working with Excel files.
-- NLP models such as **Sentence-Transformers** (e.g., all-MiniLM-L6-v2) or alternatively **FastEmbed** for generating embeddings.
+- **FastEmbed** with BAAI/bge-small-en-v1.5 for semantic comparison.
 
-## Development Status and Future Plans
-
-The project is in an active development phase and serves as an educational experiment.  
 
 **Planned Features:**
 - Implementation of the `generate_embeddings` method in the Semantic Analysis module.

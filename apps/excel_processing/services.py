@@ -243,6 +243,16 @@ class ExcelProcessingService:
                 )
 
             # Upewnienie się, że zakres wierszy nie wychodzi poza ramy pliku
+            # ZMIANA: Dostosowanie końcowego zakresu
+            max_row = len(df)
+            if end_row > max_row:
+                logger.warning(
+                    f"_extract_reference_file_data: Żądany zakres końcowy ({end_row}) przekracza dostępną liczbę wierszy ({max_row}). "
+                    f"Zakres został automatycznie dostosowany."
+                )
+                end_row = max_row
+
+            # Upewnienie się, że zakres wierszy nie wychodzi poza ramy pliku
             if end_row - start_row > len(df):
                 logger.warning(
                     f"_extract_reference_file_data: Zakres wierszy w pliku REF przekracza rozmiar pliku (end_row > len(df)). Dostosowano do rozmiaru: {len(df)}"
@@ -264,6 +274,14 @@ class ExcelProcessingService:
             )
             result = []
             for i in range(start_row, end_row):
+
+                # ZMIANA: Sprawdzenie czy indeks jest w dozwolonym zakresie
+                if i - 1 >= len(df):
+                    logger.warning(
+                        f"Indeks {i-1} przekracza rozmiar dataframe o długości {len(df)}. Pomijam."
+                    )
+                    continue
+
                 # Pobieranie wartości z komórek
                 desc_value = df.iloc[i - 1, desc_col_index]
                 price_value = df.iloc[i - 1, price_col_index]
@@ -486,9 +504,7 @@ class ExcelProcessingService:
                             similarity_formatted = "N/A"
 
                         # Aktualizacja raportu dopasowania (używamy iat zamiast iloc dla pojedynczych wartości)
-                        report_text = (
-                            f"{status_text} (podobieństwo: {similarity_formatted})"
-                        )
+                        report_text = f"[{status_text}: {similarity_formatted}] - {result['ref_description']}"
                         # Konwertujemy wartość na string przed zapisem
                         df.iat[row_idx, report_col_idx] = report_text
                     else:
